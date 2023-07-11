@@ -1,31 +1,51 @@
+from flask import Flask, render_template, request
+import numpy as np
 import os
+from tensorflow.keras.models import load_model
+from tensorflow.keras.preprocessing import image
+from werkzeug.utils import secure_filename
 
 from flask import (Flask, redirect, render_template, request,
                    send_from_directory, url_for)
 
 app = Flask(__name__)
 
+# Load the model
+model = load_model('./models/apple-224.h5')
 
-@app.route('/')
+def model_predict(img_path, model):
+    test_image = image.load_img(img_path, target_size=(224, 224))
+    test_image = image.img_to_array(test_image)
+    test_image = test_image / 255.0
+    test_image = np.expand_dims(test_image, axis=0)
+    result = model.predict(test_image)
+    return result
+
+@app.route('/', methods=['GET'])
 def index():
-   print('Request for index page received')
-   return render_template('index.html')
+    return render_template('index.html')
 
-@app.route('/favicon.ico')
-def favicon():
-    return send_from_directory(os.path.join(app.root_path, 'static'),
-                               'favicon.ico', mimetype='image/vnd.microsoft.icon')
+@app.route('/predict', methods=['POST'])
+def predict():
+    # Retrieve the uploaded image file
+    image_file = request.files['file']
 
-@app.route('/hello', methods=['POST'])
-def hello():
-   name = request.form.get('name')
+    # Save the file to the uploads folder
+    basepath = os.path.dirname(os.path.realpath('__file__'))
+    file_path = os.path.join(basepath, './uploads', secure_filename(image_file.filename))
+    image_file.save(file_path)
+    
+    # Make prediction
+    result = model_predict(file_path, model)
 
-   if name:
-       print('Request for hello page received with name=%s' % name)
-       return render_template('hello.html', name = name)
-   else:
-       print('Request for hello page received with no name or blank name -- redirecting')
-       return redirect(url_for('index'))
+    categories = ['Healthy', 'Multiple Disease', 'Rust', 'Scab']
+
+    # Process the result
+    pred_class = np.argmax(result)
+    output = categories[pred_class]
+    
+    # Return the prediction result
+    return output
 
 
 if __name__ == '__main__':
