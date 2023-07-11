@@ -1,0 +1,4 @@
+{
+    "appService.defaultWebAppToDeploy": "undefined/subscriptions/273aa9c5-d64b-4ec3-bdd4-fda13a8e0fa6/resourceGroups/appsvc_linux_centralus/providers/Microsoft.Web/sites/plantdiseasedetector",
+    "appService.deploySubpath": "."
+}
